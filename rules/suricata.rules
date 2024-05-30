@@ -1,0 +1,71 @@
+#alert http any any <> any 80 (msg:"Web服务器404，没发现资源"; content:"404"; http_stat_code; sid:561001;)
+
+# 主要针对 403， 404，500状态码异常，并针对连续 404的扫描攻击特征
+# 针对状态码异常对检测
+alert http any any <> any $HTTP_PORTS (msg:"Web服务器404异常"; content:"404"; http_stat_code; classtype: web-status-error; sid:5610001; rev:1;)
+alert http any any <> any $HTTP_PORTS (msg:"Web服务器403异常"; content:"403"; http_stat_code; classtype: web-status-error; sid:5610002; rev:1;)
+alert http any any <> any $HTTP_PORTS (msg:"Web服务器500异常"; content:"500"; http_stat_code; classtype: web-status-error; sid:5610003;)
+
+# 持续404,视为扫描
+alert http any any <> any $HTTP_PORTS (msg:"频繁404异常,疑似扫描"; content:"404"; http_stat_code; threshold: type threshold, track by_src, count 5, seconds 20; classtype: web-scan-attack; sid:5610004; rev:1;)
+
+
+# Sql注入
+alert http any any <> any $HTTP_PORTS (msg:"SQL注入攻击-union"; content:"union"; http_uri; nocase; classtype: web-sql-injection; sid:5611001; rev:1;)
+alert http any any <> any $HTTP_PORTS (msg:"SQL注入攻击-select"; content:"select"; http_uri; nocase; classtype: web-sql-injection; sid:5611002; rev:1;)
+alert http any any <> any $HTTP_PORTS (msg:"SQL注入攻击-order by"; content:"order by"; http_uri; nocase; classtype: web-sql-injection; sid:5611003; rev:1;)
+alert http any any <> any $HTTP_PORTS (msg:"SQL注入攻击-database"; content:"database("; http_uri; nocase; classtype: web-sql-injection; sid:5611004; rev:1;)
+alert http any any <> any $HTTP_PORTS (msg:"SQL注入攻击-version"; content:"version()"; http_uri; nocase; classtype: web-sql-injection; sid:5611005; rev:1;)
+alert http any any <> any $HTTP_PORTS (msg:"SQL注入攻击-update"; content:"udpatexml("; http_uri; nocase; classtype: web-sql-injection; sid:5611006; rev:1;)
+alert http any any <> any $HTTP_PORTS (msg:"SQL注入攻击-extract"; content:"extract("; http_uri; nocase; classtype: web-sql-injection; sid:5611007; rev:1;)
+alert http any any <> any $HTTP_PORTS (msg:"SQL注入攻击-if"; content:"if("; http_uri; nocase; classtype: web-sql-injection; sid:5611008; rev:1;)
+alert http any any <> any $HTTP_PORTS (msg:"SQL注入攻击-and"; content:"|20|and|20|"; http_uri; nocase; classtype: web-sql-injection; sid:5611009; rev:1;)
+alert http any any <> any $HTTP_PORTS (msg:"SQL注入攻击-or"; content:"|20|or|20|"; http_uri; nocase; classtype: web-sql-injection; sid:56110010; rev:1;)
+alert http any any <> any $HTTP_PORTS (msg:"SQL注入攻击-||"; content:"|7C 7C|"; http_uri; nocase; classtype: web-sql-injection; sid:56110011; rev:1;)
+alert http any any <> any $HTTP_PORTS (msg:"SQL注入攻击-&&"; content:"&&"; http_uri; nocase; classtype: web-sql-injection; sid:56110012; rev:1;)
+alert http any any <> any $HTTP_PORTS (msg:"SQL注入攻击-#"; content:"|23|"; http_uri; nocase; classtype: web-sql-injection; sid:56110013; rev:1;)
+alert http any any <> any $HTTP_PORTS (msg:"SQL注入攻击---"; content:"--"; http_uri; pcre: "/\+*|\s*/i"; nocase; classtype: web-sql-injection; sid:56110014; rev:1;)
+alert http any any <> any $HTTP_PORTS (msg:"SQL注入攻击-concat"; content:"concat("; http_uri; nocase; classtype: web-sql-injection; sid:56110015; rev:1;)
+alert http any any <> any $HTTP_PORTS (msg:"SQL注入攻击-groupconcat"; content:"groupconcat("; http_uri; nocase; classtype: web-sql-injection; sid:56110016; rev:1;)
+
+# 上面的规则，都写成一条正则即可
+alert http any any <> any $HTTP_PORTS (msg:"SQL注入攻击"; content:"="; http_uri; pcre: "/union|select|from|updatexml|extract|database\(|user\(|version\(|information_schema|where|coclumn|--\s|--\++|\s+and\s+|\s+or\s+|\|\||&&/i"; classtype: web-sql-injection; sid:56110017; rev:1;)
+
+# xss 攻击
+alert http any any <> any $HTTP_PORTS (msg:"xss攻击"; content:"<script"; http_uri; nocase; classtype: web-xss-attack; sid:5612001; rev:1;)
+alert http any any <> any $HTTP_PORTS (msg:"xss攻击"; content:"</script>"; http_uri; nocase; classtype: web-xss-attack; sid:5612002; rev:1;)
+alert http any any <> any $HTTP_PORTS (msg:"xss攻击"; content:"<javascript"; http_uri; nocase; classtype: web-xss-attack; sid:5612003; rev:1;)
+alert http any any <> any $HTTP_PORTS (msg:"xss攻击"; content:"alert("; http_uri; nocase; classtype: web-xss-attack; sid:5612004; rev:1;)
+alert http any any <> any $HTTP_PORTS (msg:"xss攻击"; content:"onload="; http_uri; nocase; classtype: web-xss-attack; sid:5612005; rev:1;)
+alert http any any <> any $HTTP_PORTS (msg:"xss攻击"; content:"http|3A|"; http_uri; nocase; classtype: web-xss-attack; sid:5612006; rev:1;)
+
+# ssrf攻击
+alert http any any <> any $HTTP_PORTS (msg:"ssrf攻击"; content:"file|3A|"; http_uri; nocase; classtype: web-xss-attack; sid:5613001; rev:1;)
+alert http any any <> any $HTTP_PORTS (msg:"ssrf攻击"; content:"http|3A|"; http_uri; nocase; classtype: web-xss-attack; sid:5613002; rev:1;)
+alert http any any <> any $HTTP_PORTS (msg:"ssrf攻击"; content:"https|3A|"; http_uri; nocase; classtype: web-xss-attack; sid:561300; rev:1;)
+alert http any any <> any $HTTP_PORTS (msg:"ssrf攻击"; content:"ftp|3A|"; http_uri; nocase; classtype: web-xss-attack; sid:5613003; rev:1;)
+alert http any any <> any $HTTP_PORTS (msg:"ssrf攻击"; content:"sftp|3A|"; http_uri; nocase; classtype: web-xss-attack; sid:5613004; rev:1;)
+alert http any any <> any $HTTP_PORTS (msg:"ssrf攻击"; content:"dict|3A|"; http_uri; nocase; classtype: web-xss-attack; sid:5613005; rev:1;)
+alert http any any <> any $HTTP_PORTS (msg:"ssrf攻击"; content:"gopher|3A|"; http_uri; nocase; classtype: web-xss-attack; sid:5613006; rev:1;)
+
+
+# 一句话木马
+alert http any any <> any $HTTP_PORTS (msg:"URL地址木马"; content:"<?"; http_uri; pcre: "/eval|accert|system\(exec|$_POST|$_GET/i"; nocase; classtype: web-shell-attack; sid:5614001; rev:1;)
+
+# 文件上传
+alert http any any <> any $HTTP_PORTS (msg:"文件上传"; content:"POST"; http_method; http_content_type;content: "multipart/form-data";pkt_data;content: "Content-Disposition";  http_client_body; classtype: web-file-upload; sid:5615001; rev:1;)
+
+alert http any any <> any $HTTP_PORTS (msg:"文件上传"; content:"POST"; http_method; http_content_type;content: "multipart/form-data";pkt_data;content: "Content-Disposition";  http_client_body; pcre: "/eval|assert|system\(|exec|$POST|$GET/i";classtype: web-file-upload-error; sid:5615002; rev:1;)
+
+alert http any any <> any $HTTP_PORTS (msg:"文件上传"; content:"POST"; http_method; http_content_type;content: "multipart/form-data";pkt_data;content: "Content-Disposition";  http_client_body; pcre: "/eval|assert|system\(|exec|$POST|$GET/i"; filestore;classtype: web-file-upload-error; sid:5615003; rev:1;)
+
+alert http any any <> any $HTTP_PORTS (msg:"疑似可以文件上传"; fileext:"php"; filestore;sid:5615004; rev:1;)
+alert http any any <> any $HTTP_PORTS (msg:"疑似可以文件上传"; fileext:"php5"; filestore;sid:5615005; rev:1;)
+alert http any any <> any $HTTP_PORTS (msg:"疑似可以文件上传"; fileext:"jsp"; filestore;sid:5615006; rev:1;)
+alert http any any <> any $HTTP_PORTS (msg:"疑似可以文件上传"; fileext:"phtml"; filestore;sid:5615007; rev:1;)
+
+
+# Tcp 流量检测
+alert tcp any any <> $HOME_NET any (msg:"Tcp泛洪"; flow: established, to_server; threshold: type threshold, track by_src, count 20, seconds 1; sid:5616001; rev:1;)
+alert tcp any any <> $HOME_NET any (msg:"Syn泛洪"; flags: S; flow: to_server; dsize: >100; threshold: type both, track by_src, count 20, seconds 1; classtype: attempted-dos; sid:5616002; rev:1;)
+alert tcp any any <> $HOME_NET any (msg:"CC攻击"; flow: established, to_server; threshold: type both, track by_src, count 20, seconds 1; content: "GET"; http_method;  classtype: attempted-dos; sid:5616003; rev:1;)
