@@ -1,0 +1,12 @@
+- list: shell_binaries
+  items: [ash, bash, csh, ksh, sh, tcsh, zsh, dash]
+ 
+ 
+- rule: Shell Binary Reverse shell
+  desc: Bash、Zsh etc. have network connection,May be Reverse Shell
+  condition: evt.type=dup and proc.name in (shell_binaries) and container and fd.num in (0, 1, 2, 3) and fd.type in ("ipv4", "ipv6")
+  output: >
+    Reverse shell connection (user=%user.name %container.info process=%proc.name proc.pid=%proc.pid parent=%proc.pname cmdline=%proc.cmdline terminal=%proc.tty container_id=%container.id image=%container.image.repository fd.name=%fd.name fd.num=%fd.num fd.type=%fd.type fd.sip=%fd.sip fd.rip=%fd.rip)
+  priority: emergency
+  tags: [container, reverse_shell, mitre_execution]
+  append: false
